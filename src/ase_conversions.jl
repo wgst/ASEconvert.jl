@@ -37,7 +37,7 @@ function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
         end
     end
 
-    bcs = [p ? Periodic() : DirichletZero() for p in pyconvert(Vector, ase_atoms.pbc)]
+    bcs = [p ? true : DirichletZero() for p in pyconvert(Vector, ase_atoms.pbc)]
     PythonCall.pyconvert_return(atomic_system(atoms, box, bcs; info...))
 end
 
