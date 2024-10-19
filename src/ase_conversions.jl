@@ -7,7 +7,7 @@ const uVelocity = sqrt(u"eV" / u"u")
 
 
 function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
-    box = [pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2]
+    box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
 
     atnums     = pyconvert(Vector, ase_atoms.get_atomic_numbers())
     atsyms     = pyconvert(Vector, ase_atoms.symbols)
@@ -22,7 +22,7 @@ function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
         AtomsBase.Atom(atnums[i], positions[i, :]u"Å", velocities[i, :] * uVelocity;
                        atomic_symbol=Symbol(atsyms[i]),
                        atomic_number=atnums[i],
-                       atomic_mass=atmasses[i]u"u",
+                       mass=atmasses[i]u"u",
                        magnetic_moment=magmoms[i],
                        charge=charges[i]u"e_au")
     end
@@ -37,8 +37,8 @@ function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
         end
     end
 
-    bcs = [p ? true : DirichletZero() for p in pyconvert(Vector, ase_atoms.pbc)]
-    PythonCall.pyconvert_return(atomic_system(atoms, box, bcs; info...))
+    pbcs = [p ? true : false for p in pyconvert(Vector, ase_atoms.pbc)]
+    PythonCall.pyconvert_return(atomic_system(atoms, box, pbcs; info...))
 end
 
 """
@@ -52,9 +52,9 @@ function convert_ase(system::AbstractSystem{D}) where {D}
     D != 3 && @warn "1D and 2D systems not yet fully supported."
 
     n_atoms = length(system)
-    pbc     = map(isequal(Periodic()), boundary_conditions(system))
+    pbc     = map(isequal(true), boundary_conditions(system))
     numbers = atomic_number(system)
-    masses  = ustrip.(u"u", atomic_mass(system))
+    masses  = ustrip.(u"u", mass(system))
 
     symbols_match = [
         PeriodicTable.elements[atnum].symbol == string(atomic_symbol(system, i))
@@ -90,7 +90,7 @@ function convert_ase(system::AbstractSystem{D}) where {D}
     charges = nothing
     magmoms = nothing
     for key in atomkeys(system)
-        if key in (:position, :velocity, :atomic_symbol, :atomic_number, :atomic_mass)
+        if key in (:position, :velocity, :atomic_symbol, :atomic_number, :mass)
             continue  # Already dealt with
         elseif key == :charge
             charges = ustrip.(u"e_au", system[:, :charge])
@@ -104,7 +104,7 @@ function convert_ase(system::AbstractSystem{D}) where {D}
     # Map extra system properties
     info = Dict{String, Any}()
     for (k, v) in pairs(system)
-        if k in (:bounding_box, :boundary_conditions)
+        if k in (:bounding_box, :periodicity)
             continue
         elseif k in (:charge, )
             info[string(k)] = ustrip(u"e_au", v)

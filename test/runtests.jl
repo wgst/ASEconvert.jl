@@ -19,7 +19,7 @@ using UnitfulAtomic
     # TODO Test reduced dimension
 
     @testset "Conversion to ASE (3D, with velocity)" begin
-        system, atoms, atprop, sysprop, box, bcs = make_test_system()
+        system, atoms, atprop, sysprop, box, pbcs = make_test_system()
         ase_atoms = @test_logs((:warn, r"Skipping atomic property vdw_radius"),
                                (:warn, r"Skipping atomic property covalent_radius"),
                                match_mode=:any, convert_ase(system))
@@ -28,7 +28,7 @@ using UnitfulAtomic
         for i = 1:D
             @test pyconvert(Vector, ase_atoms.cell[i - 1]) ≈ ustrip.(u"Å", box[i]) atol=1e-14
         end
-        @assert bcs == [Periodic(), Periodic(), DirichletZero()]
+        @assert pbcs == [true, true, false]
         @test pyconvert(Vector, ase_atoms.pbc) == [true, true, false]
 
         for (i, atom) in enumerate(ase_atoms)
@@ -39,7 +39,7 @@ using UnitfulAtomic
 
             @test pyconvert(String,  atom.symbol) == string(atprop.atomic_symbol[i])
             @test pyconvert(Int,     atom.number) == atprop.atomic_number[i]
-            @test pyconvert(Float64, atom.mass)   == ustrip(u"u", atprop.atomic_mass[i])
+            @test pyconvert(Float64, atom.mass)   == ustrip(u"u", atprop.mass[i])
             @test pyconvert(Float64, atom.magmom) == atprop.magnetic_moment[i]
             @test pyconvert(Float64, atom.charge) == ustrip(u"e_au", atprop.charge[i])
         end
@@ -89,8 +89,8 @@ using UnitfulAtomic
     @testset "Construction of bulk systems in ASE" begin
         bulk_Fe = pyconvert(AbstractSystem, ase.build.bulk("Fe"; cubic=true))
 
-        a = 2.87u"Å"
-        @test bounding_box(bulk_Fe) == a .* [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]]
+        a = 2.87 # u"Å"
+        @test bounding_box(bulk_Fe) == tuple(a .* [[1.0, 0, 0]u"Å", [0, 1.0, 0]u"Å", [0, 0, 1.0]u"Å"] ...)
         @test atomic_symbol(bulk_Fe) == [:Fe, :Fe]
         @test position(bulk_Fe) == [[0.0, 0.0, 0.0], [1.435, 1.435, 1.435]]u"Å"
         @test velocity(bulk_Fe) == [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]*sqrt(u"eV"/u"u")
@@ -116,8 +116,8 @@ using UnitfulAtomic
         # special things (atomic masses, magmoms, charges)
         atomic_symbol = [:H, :H, :C, :N, :He]
         atomic_number = [1, 1, 6, 7, 2]
-        atomic_mass   = [elements[at].atomic_mass for at in atomic_number]
-        extra_atprop  = (; atomic_symbol, atomic_number, atomic_mass)
+        mass   = [elements[at].mass for at in atomic_number]
+        extra_atprop  = (; atomic_symbol, atomic_number, mass)
 
         system = make_ase_system(; extra_atprop, drop_atprop=[:velocity]).system
         mktempdir() do d

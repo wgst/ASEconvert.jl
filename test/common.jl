@@ -22,7 +22,7 @@ function test_approx_eq(s::AbstractSystem, t::AbstractSystem;
     end
 
     @test maximum(map(rnorm, bounding_box(s), bounding_box(t))) < rtol
-    for method in (position, atomic_mass)
+    for method in (position, mass)
         @test maximum(map(rnorm, method(s), method(t))) < rtol
         @test rnorm(method(s, 1), method(t, 1)) < rtol
     end
@@ -94,10 +94,10 @@ Extra atomic or system properties can be specified using `extra_atprop` and `ext
 and specific standard keys can be ignored using `drop_atprop` and `drop_sysprop`.
 """
 function make_test_system(D=3; drop_atprop=Symbol[], drop_sysprop=Symbol[],
-                          extra_atprop=(; ), extra_sysprop=(; ), cellmatrix=:full)
+                          extra_atprop=(; ), extra_sysprop=(; ), cellmatrix=:full, n_atoms = 5)
     # TODO Should be moved to AtomsBase
     @assert D == 3
-    n_atoms = 5
+    
 
     # Generate some random data to store in Atoms
     atprop = Dict{Symbol,Any}(
@@ -107,7 +107,7 @@ function make_test_system(D=3; drop_atprop=Symbol[], drop_sysprop=Symbol[],
         :atomic_symbol   => [:H, :H, :C, :N, :He],
         :atomic_number   => [1, 1, 6, 7, 2],
         :charge          => [2, 1, 3.0, -1.0, 0.0]u"e_au",
-        :atomic_mass     => 10rand(n_atoms)u"u",
+        :mass     => 10rand(n_atoms)u"u",
         :vdw_radius      => randn(n_atoms)u"Å",
         :covalent_radius => randn(n_atoms)u"Å",
         :magnetic_moment => [0.0, 0.0, 1.0, -1.0, 0.0],
@@ -138,20 +138,20 @@ function make_test_system(D=3; drop_atprop=Symbol[], drop_sysprop=Symbol[],
         end
     end
     if cellmatrix == :upper_triangular
-        box = [[1.54732, -0.807289, -0.500870],
-               [    0.0, 0.4654985, 0.5615117],
-               [    0.0,       0.0, 0.7928950]]u"Å"
+        box = tuple([[1.54732, -0.807289, -0.500870]u"Å",
+               [    0.0, 0.4654985, 0.5615117]u"Å",
+               [    0.0,       0.0, 0.7928950]u"Å"] ...)
     elseif cellmatrix == :lower_triangular
-        box = [[1.54732, 0.0, 0.0],
-               [-0.807289, 0.4654985, 0.0],
-               [-0.500870, 0.5615117, 0.7928950]]u"Å"
+        box = tuple([[1.54732, 0.0, 0.0]u"Å",
+               [-0.807289, 0.4654985, 0.0]u"Å",
+               [-0.500870, 0.5615117, 0.7928950]u"Å"] ...)
     else
-        box = [[-1.50304, 0.850344, 0.717239],
-               [ 0.36113, 0.008144, 0.814712],
-               [ 0.06828, 0.381122, 0.129081]]u"Å"
+        box = tuple([[-1.50304, 0.850344, 0.717239]u"Å",
+               [ 0.36113, 0.008144, 0.814712]u"Å",
+               [ 0.06828, 0.381122, 0.129081]u"Å"] ...)
     end
-    bcs = [Periodic(), Periodic(), DirichletZero()]
-    system = atomic_system(atoms, box, bcs; sysprop...)
+    pbcs = [true, true, false]
+    system = atomic_system(atoms, box, pbcs; sysprop...)
 
-    (; system, atoms, atprop=NamedTuple(atprop), sysprop=NamedTuple(sysprop), box, bcs)
+    (; system, atoms, atprop=NamedTuple(atprop), sysprop=NamedTuple(sysprop), box, pbcs)
 end
