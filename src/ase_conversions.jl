@@ -6,7 +6,7 @@ import PeriodicTable
 const uVelocity = sqrt(u"eV" / u"u")
 
 
-function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms)
+function ase_to_system(ase_atoms)
     # ase_atoms = pyimport("ase.io").read(ase_atoms_path)
 
     box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
