@@ -6,9 +6,9 @@ import PeriodicTable
 const uVelocity = sqrt(u"eV" / u"u")
 
 
-function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms_path::string)
-    aseio = pyimport("ase.io")
-    ase_atoms = aseio.read(ase_atoms_path)
+function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms)
+    # ase_atoms = pyimport("ase.io").read(ase_atoms_path)
+
     box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
 
     atnums     = pyconvert(Vector, ase_atoms.get_atomic_numbers())
@@ -40,7 +40,8 @@ function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms_path::string)
     end
 
     pbcs = [p ? true : false for p in pyconvert(Vector, ase_atoms.pbc)]
-    PythonCall.pyconvert_return(atomic_system(atoms, box, pbcs; info...))
+    # PythonCall.pyconvert_return(atomic_system(atoms, box, pbcs; info...))
+    return atomic_system(atoms, box, pbcs; info...)
 end
 
 """
