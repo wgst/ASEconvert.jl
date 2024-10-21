@@ -17,8 +17,7 @@ Global constant representing the `ase` python module available from Julia.
 const ase = PythonCall.pynew()
 function __init__()
     PythonCall.pycopy!(ase, pyimport("ase"))
-    PythonCall.pyconvert_add_rule(String, AbstractSystem, ase_to_system)
-
+    PythonCall.pyconvert_add_rule(string, AbstractSystem, ase_to_system)
     # Make a bunch of submodules available
     for sub in ("ase.io", "ase.build", "ase.lattice", "ase.visualize")
         pyimport(sub)
