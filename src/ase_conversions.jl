@@ -7,7 +7,7 @@ const uVelocity = sqrt(u"eV" / u"u")
 
 
 function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
-    box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
+    box = [pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2]
 
     atnums     = pyconvert(Vector, ase_atoms.get_atomic_numbers())
     atsyms     = pyconvert(Vector, ase_atoms.get_chemical_symbols())
