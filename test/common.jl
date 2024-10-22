@@ -17,7 +17,7 @@ function test_approx_eq(s::AbstractSystem, t::AbstractSystem;
     rnorm(a, b) = (ustrip(norm(a)) < rtol ? norm(a - b) / 1unit(norm(a))
                                           : norm(a - b) / norm(a))
 
-    for method in (length, size, boundary_conditions)
+    for method in (length, size, periodicity)
         @test method(s) == method(t)
     end
 
@@ -33,10 +33,10 @@ function test_approx_eq(s::AbstractSystem, t::AbstractSystem;
     end
 
     if !(:velocity in ignore_atprop)
-        @test ismissing(velocity(s)) == ismissing(velocity(t))
-        if !ismissing(velocity(s)) && !ismissing(velocity(t))
-            @test maximum(map(rnorm, velocity(s), velocity(t))) < rtol
-            @test rnorm(velocity(s, 1), velocity(t, 1)) < rtol
+        @test ismissing(velocity(s, :)) == ismissing(velocity(t, :))
+        if !ismissing(velocity(s, :)) && !ismissing(velocity(t, :))
+            @test maximum(map(rnorm, velocity(s, :), velocity(t, :))) < rtol
+            @test rnorm(velocity(s, :, 1), velocity(t, 1)) < rtol
         end
     end
 
@@ -138,20 +138,20 @@ function make_test_system(D=3; drop_atprop=Symbol[], drop_sysprop=Symbol[],
         end
     end
     if cellmatrix == :upper_triangular
-        box = [[1.54732, -0.807289, -0.500870],
-               [    0.0, 0.4654985, 0.5615117],
-               [    0.0,       0.0, 0.7928950]]u"Å"
+        box = tuple([[1.54732, -0.807289, -0.500870]u"Å",
+               [    0.0, 0.4654985, 0.5615117]u"Å",
+               [    0.0,       0.0, 0.7928950]u"Å"] ...)
     elseif cellmatrix == :lower_triangular
-        box = [[1.54732, 0.0, 0.0],
-               [-0.807289, 0.4654985, 0.0],
-               [-0.500870, 0.5615117, 0.7928950]]u"Å"
+        box = tuple([[1.54732, 0.0, 0.0]u"Å",
+               [-0.807289, 0.4654985, 0.0]u"Å",
+               [-0.500870, 0.5615117, 0.7928950]u"Å"] ...)
     else
-        box = [[-1.50304, 0.850344, 0.717239],
-               [ 0.36113, 0.008144, 0.814712],
-               [ 0.06828, 0.381122, 0.129081]]u"Å"
+        box = tuple([[-1.50304, 0.850344, 0.717239]u"Å",
+               [ 0.36113, 0.008144, 0.814712]u"Å",
+               [ 0.06828, 0.381122, 0.129081]u"Å"] ...)
     end
-    bcs = [Periodic(), Periodic(), DirichletZero()]
-    system = atomic_system(atoms, box, bcs; sysprop...)
+    pbcs = [true, true, false]
+    system = atomic_system(atoms, box, pbcs; sysprop...)
 
-    (; system, atoms, atprop=NamedTuple(atprop), sysprop=NamedTuple(sysprop), box, bcs)
+    (; system, atoms, atprop=NamedTuple(atprop), sysprop=NamedTuple(sysprop), box, pbcs)
 end

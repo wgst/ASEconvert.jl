@@ -7,7 +7,7 @@ const uVelocity = sqrt(u"eV" / u"u")
 
 
 function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
-    box = [pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2]
+    box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
 
     atnums     = pyconvert(Vector, ase_atoms.get_atomic_numbers())
     atsyms     = pyconvert(Vector, ase_atoms.symbols)
@@ -37,8 +37,8 @@ function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
         end
     end
 
-    bcs = [p ? Periodic() : DirichletZero() for p in pyconvert(Vector, ase_atoms.pbc)]
-    PythonCall.pyconvert_return(atomic_system(atoms, box, bcs; info...))
+    pbcs = [p ? true : false for p in pyconvert(Vector, ase_atoms.pbc)]
+    PythonCall.pyconvert_return(atomic_system(atoms, box, pbcs; info...))
 end
 
 """
@@ -52,9 +52,9 @@ function convert_ase(system::AbstractSystem{D}) where {D}
     D != 3 && @warn "1D and 2D systems not yet fully supported."
 
     n_atoms = length(system)
-    pbc     = map(isequal(Periodic()), boundary_conditions(system))
-    numbers = atomic_number(system)
-    masses  = ustrip.(u"u", atomic_mass(system))
+    pbc     = map(isequal(true), periodicity(system, :))
+    numbers = atomic_number(system, :)
+    masses  = ustrip.(u"u", atomic_mass(system, :))
 
     symbols_match = [
         PeriodicTable.elements[atnum].symbol == string(atomic_symbol(system, i))
@@ -66,7 +66,7 @@ function convert_ase(system::AbstractSystem{D}) where {D}
     end
 
     cell = zeros(3, 3)
-    for (i, v) in enumerate(bounding_box(system))
+    for (i, v) in enumerate(bounding_box(system, :))
         cell[i, 1:D] = ustrip.(u"Å", v)
     end
 
@@ -76,7 +76,7 @@ function convert_ase(system::AbstractSystem{D}) where {D}
     end
 
     velocities = nothing
-    if !ismissing(velocity(system))
+    if !ismissing(velocity(system, :))
         velocities = zeros(n_atoms, 3)
         for at = 1:n_atoms
             velocities[at, 1:D] = ustrip.(uVelocity, velocity(system, at))
@@ -104,7 +104,7 @@ function convert_ase(system::AbstractSystem{D}) where {D}
     # Map extra system properties
     info = Dict{String, Any}()
     for (k, v) in pairs(system)
-        if k in (:bounding_box, :boundary_conditions)
+        if k in (:bounding_box, :periodicity)
             continue
         elseif k in (:charge, )
             info[string(k)] = ustrip(u"e_au", v)

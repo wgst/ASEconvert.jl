@@ -93,7 +93,7 @@ using UnitfulAtomic
         @test bounding_box(bulk_Fe, :) == a .* [[1.0, 0, 0], [0, 1.0, 0], [0, 0, 1.0]]
         @test atomic_symbol(bulk_Fe, :) == [:Fe, :Fe]
         @test position(bulk_Fe, :) == [[0.0, 0.0, 0.0], [1.435, 1.435, 1.435]]u"Å"
-        @test velocity(bulk_Fe, :) == [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]*sqrt(u"eV"/u"u")
+        @test periodicitybulk_Fe, :) == [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]*sqrt(u"eV"/u"u")
     end
 
     @testset "Writing / reading files using ASE" begin
