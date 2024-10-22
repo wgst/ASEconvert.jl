@@ -10,7 +10,7 @@ function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
     box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
 
     atnums     = pyconvert(Vector, ase_atoms.get_atomic_numbers())
-    atsyms     = pyconvert(Vector, ase_atoms.symbols)
+    atsyms     = pyconvert(Vector, ase_atoms.get_chemical_symbols())
     atmasses   = pyconvert(Vector, ase_atoms.get_masses())
     positions  = pyconvert(Matrix, ase_atoms.get_positions())
     velocities = pyconvert(Matrix, ase_atoms.get_velocities())
