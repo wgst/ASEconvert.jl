@@ -7,6 +7,8 @@ const uVelocity = sqrt(u"eV" / u"u")
 
 
 function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
+    print(ase_atoms)
+    print(ase_atoms.cell)
     print(1)
     box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
     print(2)
