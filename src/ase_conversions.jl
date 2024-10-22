@@ -6,46 +6,29 @@ import PeriodicTable
 const uVelocity = sqrt(u"eV" / u"u")
 
 
-function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
-    print(ase_atoms)
-    print(ase_atoms.cell)
-    print(ase_atoms.cell[0])
-    print(ase_atoms.cell[1])
-    print(ase_atoms.cell[2])
-    # print(Py(ase_atoms.cell[0]))
-    # print(pyconvert(Vector, ase_atoms.cell[0])u"Å")
-    print(PyVector(Py(ase_atoms.cell[0])))
-    print(1)
-    box = tuple([PyVector(Py(ase_atoms.cell[i]))u"Å" for i = 0:2] ...)
-    print(2)
+function ase_to_system(ase_atoms) #_path)
+    box = tuple([pyconvert(Vector, ase_atoms.cell[i])u"Å" for i = 0:2] ...)
     atnums     = pyconvert(Vector, ase_atoms.get_atomic_numbers())
-    print(3)
     atsyms     = pyconvert(Vector, ase_atoms.get_chemical_symbols())
-    print(4)
     atmasses   = pyconvert(Vector, ase_atoms.get_masses())
-    print(5)
     positions  = pyconvert(Matrix, ase_atoms.get_positions())
-    print(6)
     velocities = pyconvert(Matrix, ase_atoms.get_velocities())
-    print(7)
     magmoms    = pyconvert(Vector, ase_atoms.get_initial_magnetic_moments())
-    print(8)
     charges    = pyconvert(Vector, ase_atoms.get_initial_charges())
-    print(9)
     ase_info   = pyconvert(Dict{String,Any}, ase_atoms.info)
-    print(10)
 
     atoms = map(1:length(atnums)) do i
         AtomsBase.Atom(atnums[i], positions[i, :]u"Å", velocities[i, :] * uVelocity;
                        atomic_symbol=Symbol(atsyms[i]),
                        atomic_number=atnums[i],
-                       atomic_mass=atmasses[i]u"u",
+                       mass=atmasses[i]u"u",
                        magnetic_moment=magmoms[i],
                        charge=charges[i]u"e_au")
     end
-    print(11)
+
     # Parse extra data in info struct
     info = Dict{Symbol, Any}()
+
     for (k, v) in ase_info
         if k == "charge"
             info[Symbol(k)] = v * u"e_au"
@@ -53,10 +36,9 @@ function ase_to_system(S::Type{<:AbstractSystem}, ase_atoms::Py)
             info[Symbol(k)] = v
         end
     end
-    print(11)
     pbcs = [p ? true : false for p in pyconvert(Vector, ase_atoms.pbc)]
-    print(12)
-    PythonCall.pyconvert_return(atomic_system(atoms, box, pbcs; info...))
+    # PythonCall.pyconvert_return(atomic_system(atoms, box, pbcs; info...))
+    return atomic_system(atoms, box, pbcs; info...)
 end
 
 """
